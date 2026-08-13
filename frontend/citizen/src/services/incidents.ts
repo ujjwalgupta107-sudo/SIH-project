@@ -1,0 +1,4 @@
+import type {Incident} from '../../../shared/contracts';
+const api=import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+export async function createIncident(description:string):Promise<Incident>{const response=await fetch(`${api}/incidents`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'road_damage',description,location:{latitude:26.8467,longitude:80.9462,address:'Hazratganj, Lucknow'}})});if(!response.ok)throw new Error('Your report could not be submitted. Check your connection and try again.');return response.json()}
+export async function analyzeIncident(id:string,token:string){const response=await fetch(`${api}/incidents/${id}/analyze`,{method:'POST',headers:{Authorization:`Bearer ${token}`}});if(!response.ok)throw new Error('Analysis is taking longer than expected. Your report is saved and can be retried.');return response.json()}

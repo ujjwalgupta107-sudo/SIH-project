@@ -1,0 +1,2 @@
+import type {ReactNode} from 'react';import {Link} from 'react-router-dom';import {House,ClipboardList,User,ShieldCheck} from 'lucide-react';
+export function AppShell({children}:{children:ReactNode}){return <main className="app"><header><Link to="/home" className="brand"><ShieldCheck/> CivicShield</Link><button aria-label="Open profile" className="avatar">US</button></header>{children}<nav aria-label="Citizen navigation"><Link to="/home"><House/>Home</Link><Link to="/history"><ClipboardList/>Reports</Link><Link to="/profile"><User/>Profile</Link></nav></main>}
