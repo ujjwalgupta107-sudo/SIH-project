@@ -1,0 +1,13 @@
+classes:
+  pothole: 0
+  garbage_pile: 1
+  waterlogging: 2
+
+split:
+  train: 0.8
+  val: 0.2
+  test: 0.0
+  seed: 42
+
+thresholds:
+  phash_distance: 5
