@@ -13,3 +13,13 @@ def get_upload_url(
 ):
     storage_key, upload_url, expires_in = storage.generate_upload_url(req.mime_type, req.size_bytes)
     return {"storage_key": storage_key, "upload_url": upload_url, "expires_in": expires_in}
+
+from fastapi import UploadFile, File
+from ..schemas import PredictResponse
+from ..services.ml import ml_service
+
+@router.post('/predict', response_model=PredictResponse)
+def predict_image(file: UploadFile = File(...), _user = Depends(require_roles('CITIZEN', 'OFFICER', 'OPERATOR', 'ADMIN'))):
+    image_bytes = file.file.read()
+    return ml_service.predict(image_bytes)
+

@@ -17,3 +17,7 @@ class IncidentRead(BaseModel):
     model_config=ConfigDict(from_attributes=True); id:str; type:str; description:str; latitude:float; longitude:float; address:str; severity:int; confidence:float; risk_level:Risk; department:str; status:Status; created_at:datetime; updated_at:datetime
 class DepartmentRead(BaseModel): model_config=ConfigDict(from_attributes=True); id:str; name:str; code:str
 class TokenPayload(BaseModel): sub:str; role:Literal['CITIZEN','OFFICER','OPERATOR','ADMIN']
+
+class BBox(BaseModel): x1: float; y1: float; x2: float; y2: float
+class Detection(BaseModel): class_id: int; class_name: str; confidence: float; bbox: BBox
+class PredictResponse(BaseModel): detections: list[Detection]

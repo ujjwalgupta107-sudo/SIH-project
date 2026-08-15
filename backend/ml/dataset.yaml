@@ -1,0 +1,10 @@
+path: ../../civicshield-dataset/processed/final_3class
+train: images/train
+val: images/val
+test: images/test
+
+# Classes
+names:
+  0: pothole
+  1: garbage_pile
+  2: waterlogging
