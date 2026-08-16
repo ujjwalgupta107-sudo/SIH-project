@@ -121,6 +121,10 @@ export function MediaCapture({ onCapture }: { onCapture: (media: CapturedMedia) 
           </button>
         </div>
       )}
+      <div className="detection-status" style={{ marginTop: '12px', fontSize: '13px', color: '#666', padding: '8px', borderRadius: '4px', backgroundColor: '#f8f9fa', border: '1px solid #e9ecef', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+        <span>Active Detections: <b>Pothole</b>, <b>Waterlogging</b></span>
+        <span style={{ color: '#856404', fontWeight: '500' }}>• Garbage Detection — Coming Soon</span>
+      </div>
     </div>
   );
 }

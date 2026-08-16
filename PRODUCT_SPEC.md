@@ -376,7 +376,7 @@ A Kanban-style or simple list view prioritized strictly by AI Severity Score.
     "after": []
   },
   "aiAnalysis": {
-    "classification": "road_damage",
+    "classification": "pothole",
     "confidence": 0.96,
     "severityScore": 88,
     "riskLevel": "HIGH",

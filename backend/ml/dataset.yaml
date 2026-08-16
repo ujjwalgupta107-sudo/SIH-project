@@ -1,10 +1,10 @@
-path: ../../civicshield-dataset/processed/final_3class
+path: ../../civicshield-dataset/processed/interim_2class_split
 train: images/train
 val: images/val
 test: images/test
 
-# Classes
+# Classes (2-class interim model - contiguous indices)
+nc: 2
 names:
   0: pothole
-  1: garbage_pile
-  2: waterlogging
+  1: waterlogging
