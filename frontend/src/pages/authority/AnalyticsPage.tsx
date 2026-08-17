@@ -1,288 +1,220 @@
-import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock, Users, MapPin, BarChart3, PieChart, Activity, Download, Filter } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
+import {
+  TrendingUp,
+  BarChart3,
+  PieChart,
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  Award,
+  Download,
+  Calendar,
+  Layers,
+  Zap
+} from 'lucide-react';
 
 export function AnalyticsPage() {
-  const [dateRange, setDateRange] = useState('30d');
-  const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [dateRange, setDateRange] = useState('30D');
 
-  const analytics = {
-    overview: {
-      totalIncidents: 1247,
-      resolved: 987,
-      inProgress: 189,
-      critical: 23,
-      avgResolutionTime: '2.8 days',
-      slaCompliance: 87,
-      citizenSatisfaction: 4.2,
-    },
-    byType: [
-      { type: 'Pothole', count: 623, resolved: 512, avgTime: '2.1d', severity: 'HIGH' },
-      { type: 'Waterlogging', count: 489, resolved: 387, avgTime: '3.5d', severity: 'CRITICAL' },
-    ],
-    byDepartment: [
-      { dept: 'PWD', total: 623, resolved: 512, pending: 111, sla: 89 },
-      { dept: 'Municipal Corp', total: 489, resolved: 387, pending: 102, sla: 82 },
-      { dept: 'Sanitation', total: 135, resolved: 88, pending: 47, sla: 76 },
-    ],
-    monthlyTrend: [
-      { month: 'Mar', reported: 180, resolved: 165, critical: 12 },
-      { month: 'Apr', reported: 210, resolved: 195, critical: 8 },
-      { month: 'May', reported: 245, resolved: 220, critical: 15 },
-      { month: 'Jun', reported: 198, resolved: 180, critical: 5 },
-      { month: 'Jul', reported: 234, resolved: 210, critical: 18 },
-      { month: 'Aug', reported: 180, resolved: 158, critical: 9 },
-    ],
-    hotspots: [
-      { area: 'Hazratganj', incidents: 45, type: 'Pothole', trend: '+12%' },
-      { area: 'Gomti Nagar', incidents: 38, type: 'Waterlogging', trend: '+8%' },
-      { area: 'Alambagh', incidents: 32, type: 'Pothole', trend: '-5%' },
-      { area: 'Indira Nagar', incidents: 28, type: 'Waterlogging', trend: '+15%' },
-      { area: 'Chowk', incidents: 24, type: 'Mixed', trend: '+3%' },
-    ],
-    slaBreaches: [
-      { incident: 'INC-2026-045', type: 'Waterlogging', dept: 'Municipal Corp', overdue: '3 days', severity: 'CRITICAL' },
-      { incident: 'INC-2026-078', type: 'Pothole', dept: 'PWD', overdue: '2 days', severity: 'HIGH' },
-    ],
-  };
+  const departmentData = [
+    { name: 'Public Works (PWD)', active: 18, resolved: 84, sla: '96.2%', color: '#38bdf8' },
+    { name: 'Drainage Department', active: 9, resolved: 52, sla: '94.8%', color: '#06b6d4' },
+    { name: 'Sanitation Department', active: 6, resolved: 38, sla: '98.1%', color: '#a855f7' },
+  ];
 
-  const maxReported = Math.max(...analytics.monthlyTrend.map(m => m.reported));
-  const maxCritical = Math.max(...analytics.monthlyTrend.map(m => m.critical));
+  const resolutionDistribution = [
+    { label: '< 2 Hours (Emergency)', count: 42, pct: 38, color: '#10b981' },
+    { label: '2 - 6 Hours (High Priority)', count: 48, pct: 44, color: '#38bdf8' },
+    { label: '6 - 24 Hours (Standard)', count: 16, pct: 15, color: '#f59e0b' },
+    { label: '> 24 Hours (Complex Repair)', count: 4, pct: 3, color: '#ef4444' },
+  ];
 
   return (
-    <div className="page authority-page analytics-page">
-      <header className="page-header">
-        <div>
-          <h1>Analytics</h1>
-          <p className="muted">Operational insights and performance metrics</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* Header */}
+      <div className="page-header-row">
+        <div className="page-title-group">
+          <h1>
+            <TrendingUp size={24} color="#f87171" />
+            <span>Executive Municipal Operations Analytics</span>
+          </h1>
+          <p>Macro performance metrics, department SLA adherence, MTTR distributions, and AI precision telemetry.</p>
         </div>
-        <div className="header-actions">
-          <select className="select" value={dateRange} onChange={e => setDateRange(e.target.value)}>
-            <option value="7d">Last 7 Days</option>
-            <option value="30d">Last 30 Days</option>
-            <option value="90d">Last 90 Days</option>
-            <option value="1y">Last Year</option>
-          </select>
-          <select className="select" value={departmentFilter} onChange={e => setDepartmentFilter(e.target.value)}>
-            <option value="all">All Departments</option>
-            <option value="PWD">PWD</option>
-            <option value="Municipal Corp">Municipal Corp</option>
-            <option value="Sanitation">Sanitation</option>
-          </select>
-          <button className="btn btn-primary"><Download size={18} /> Export Report</button>
-        </div>
-      </header>
 
-      <section className="kpi-section">
-        <div className="kpi-grid">
-          <article className="kpi-card">
-            <div className="kpi-icon total"><Activity size={24} /></div>
-            <div>
-              <p className="kpi-value">{analytics.overview.totalIncidents.toLocaleString()}</p>
-              <p className="kpi-label">Total Incidents</p>
-              <p className="kpi-trend positive"><TrendingUp size={14} /> 12% vs last period</p>
-            </div>
-          </article>
-          <article className="kpi-card">
-            <div className="kpi-icon resolved"><CheckCircle size={24} /></div>
-            <div>
-              <p className="kpi-value">{analytics.overview.resolved.toLocaleString()}</p>
-              <p className="kpi-label">Resolved</p>
-              <p className="kpi-trend positive"><TrendingUp size={14} /> {analytics.overview.slaCompliance}% SLA compliance</p>
-            </div>
-          </article>
-          <article className="kpi-card critical">
-            <div className="kpi-icon critical"><AlertTriangle size={24} /></div>
-            <div>
-              <p className="kpi-value">{analytics.overview.critical}</p>
-              <p className="kpi-label">Critical Open</p>
-              <p className="kpi-trend negative"><TrendingDown size={14} /> {analytics.overview.inProgress} in progress</p>
-            </div>
-          </article>
-          <article className="kpi-card">
-            <div className="kpi-icon time"><Clock size={24} /></div>
-            <div>
-              <p className="kpi-value">{analytics.overview.avgResolutionTime}</p>
-              <p className="kpi-label">Avg Resolution</p>
-              <p className="kpi-trend positive"><TrendingDown size={14} /> 0.3 days improvement</p>
-            </div>
-          </article>
-          <article className="kpi-card">
-            <div className="kpi-icon satisfaction"><Users size={24} /></div>
-            <div>
-              <p className="kpi-value">{analytics.overview.citizenSatisfaction}/5</p>
-              <p className="kpi-label">Citizen Satisfaction</p>
-              <p className="kpi-trend positive"><TrendingUp size={14} /> Above target</p>
-            </div>
-          </article>
-          <article className="kpi-card">
-            <div className="kpi-icon sla"><BarChart3 size={24} /></div>
-            <div>
-              <p className="kpi-value">{analytics.overview.slaCompliance}%</p>
-              <p className="kpi-label">SLA Compliance</p>
-              <p className="kpi-trend positive"><TrendingUp size={14} /> Target: 85%</p>
-            </div>
-          </article>
-        </div>
-      </section>
+        <div className="page-header-actions">
+          <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-surface)', padding: '3px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+            {['7D', '30D', '90D', 'YTD'].map((r) => (
+              <button
+                key={r}
+                type="button"
+                className={`filter-pill-btn ${dateRange === r ? 'active' : ''}`}
+                style={{ padding: '4px 10px', fontSize: '11.5px' }}
+                onClick={() => setDateRange(r)}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
 
-      <div className="charts-grid">
-        <section className="chart-card">
-          <header className="chart-header">
-            <h2>Incidents by Type</h2>
-            <p className="muted">Distribution and resolution rates</p>
-          </header>
-          <div className="type-breakdown">
-            {analytics.byType.map(item => (
-              <div key={item.type} className="type-row">
-                <div className="type-info">
-                  <span className="type-icon">{item.type === 'Pothole' ? '🕳️' : '💧'}</span>
+          <button className="btn btn-secondary btn-sm" onClick={() => alert('Exporting Municipal Report CSV...')}>
+            <Download size={14} />
+            <span>Export Report</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Top 4 Performance Cards */}
+      <div className="grid-4">
+        <div className="metric-kpi-card">
+          <div className="kpi-top-row">
+            <span className="kpi-label">SLA Compliance Rate</span>
+            <div className="kpi-icon-box green">
+              <CheckCircle size={18} />
+            </div>
+          </div>
+          <div className="kpi-main-val">96.4%</div>
+          <div className="kpi-bottom-row">
+            <span>Target: &gt;95.0%</span>
+            <span className="kpi-trend-pill positive">+1.8% vs Target</span>
+          </div>
+        </div>
+
+        <div className="metric-kpi-card">
+          <div className="kpi-top-row">
+            <span className="kpi-label">Mean Time to Resolve (MTTR)</span>
+            <div className="kpi-icon-box cyan">
+              <Clock size={18} />
+            </div>
+          </div>
+          <div className="kpi-main-val">3.4 Hours</div>
+          <div className="kpi-bottom-row">
+            <span>Reduced by 48 mins</span>
+            <span className="kpi-trend-pill positive">Faster Triage</span>
+          </div>
+        </div>
+
+        <div className="metric-kpi-card">
+          <div className="kpi-top-row">
+            <span className="kpi-label">Total Hazardous Fixed</span>
+            <div className="kpi-icon-box blue">
+              <Layers size={18} />
+            </div>
+          </div>
+          <div className="kpi-main-val">174</div>
+          <div className="kpi-bottom-row">
+            <span>In current period ({dateRange})</span>
+            <span className="kpi-trend-pill positive">+14% Volume</span>
+          </div>
+        </div>
+
+        <div className="metric-kpi-card">
+          <div className="kpi-top-row">
+            <span className="kpi-label">AI False Positive Rate</span>
+            <div className="kpi-icon-box amber">
+              <Zap size={18} />
+            </div>
+          </div>
+          <div className="kpi-main-val">2.8%</div>
+          <div className="kpi-bottom-row">
+            <span>YOLOv8 autonomous filter</span>
+            <span className="kpi-trend-pill positive">Ultra Low</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Split Charts */}
+      <div className="grid-split-60-40">
+        {/* Department SLA & Workload Scorecard */}
+        <div className="enterprise-card">
+          <div className="card-header">
+            <div className="card-title-block">
+              <BarChart3 size={16} color="#06b6d4" />
+              <span className="card-title">Department Workload & SLA Compliance</span>
+            </div>
+          </div>
+
+          <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {departmentData.map((dept, idx) => (
+              <div
+                key={idx}
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <span className="type-name">{item.type}</span>
-                    <span className="type-severity">{item.severity} severity</span>
+                    <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-main)' }}>{dept.name}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                      Active: <strong>{dept.active}</strong> • Resolved: <strong>{dept.resolved}</strong>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>SLA Score</div>
+                    <div style={{ fontSize: '16px', fontWeight: 800, color: '#34d399' }}>{dept.sla}</div>
                   </div>
                 </div>
-                <div className="type-stats">
-                  <div className="stat-mini">
-                    <span className="stat-value">{item.count}</span>
-                    <span className="stat-label">Total</span>
-                  </div>
-                  <div className="stat-mini">
-                    <span className="stat-value resolved">{item.resolved}</span>
-                    <span className="stat-label">Resolved</span>
-                  </div>
-                  <div className="stat-mini">
-                    <span className="stat-value">{item.avgTime}</span>
-                    <span className="stat-label">Avg Time</span>
-                  </div>
-                  <div className="progress-mini">
-                    <div className="progress-bar" style={{ width: `${(item.resolved / item.count) * 100}%` }} />
-                  </div>
+
+                {/* Progress Bar */}
+                <div style={{ width: '100%', height: '8px', background: 'var(--bg-input)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      width: `${(dept.resolved / (dept.resolved + dept.active)) * 100}%`,
+                      height: '100%',
+                      background: dept.color,
+                      borderRadius: 'var(--radius-full)'
+                    }}
+                  />
                 </div>
               </div>
             ))}
           </div>
-        </section>
+        </div>
 
-        <section className="chart-card">
-          <header className="chart-header">
-            <h2>Department Performance</h2>
-            <p className="muted">SLA compliance by department</p>
-          </header>
-          <div className="dept-performance">
-            {analytics.byDepartment.map(item => (
-              <div key={item.dept} className="dept-row">
-                <div className="dept-info">
-                  <span className="dept-name">{item.dept}</span>
-                  <span className="dept-sla">{item.sla}% SLA</span>
-                </div>
-                <div className="dept-bars">
-                  <div className="bar-group">
-                    <div className="bar total" style={{ width: '100%' }} />
-                    <div className="bar resolved" style={{ width: `${(item.resolved / item.total) * 100}%` }} />
-                    <div className="bar pending" style={{ width: `${(item.pending / item.total) * 100}%`, marginLeft: `${(item.resolved / item.total) * 100}%` }} />
-                  </div>
-                  <div className="bar-legend">
-                    <span className="legend-dot resolved" /> Resolved
-                    <span className="legend-dot pending" /> Pending
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="chart-card full-width">
-          <header className="chart-header">
-            <h2>Monthly Trend</h2>
-            <p className="muted">Reported vs Resolved vs Critical</p>
-          </header>
-          <div className="trend-chart">
-            <div className="chart-area">
-              {analytics.monthlyTrend.map((item, idx) => (
-                <div key={item.month} className="trend-bar-group">
-                  <div className="bar-wrapper">
-                    <div className="bar reported" style={{ height: `${(item.reported / maxReported) * 100}%` }} title={`${item.reported} reported`} />
-                    <div className="bar resolved" style={{ height: `${(item.resolved / maxReported) * 100}%` }} title={`${item.resolved} resolved`} />
-                    <div className="bar critical" style={{ height: `${(item.critical / maxCritical) * 100}%` }} title={`${item.critical} critical`} />
-                  </div>
-                  <span className="bar-label">{item.month}</span>
-                </div>
-              ))}
-            </div>
-            <div className="chart-legend">
-              <span className="legend-item"><span className="legend-color reported" /> Reported</span>
-              <span className="legend-item"><span className="legend-color resolved" /> Resolved</span>
-              <span className="legend-item"><span className="legend-color critical" /> Critical</span>
+        {/* Resolution Time Distribution */}
+        <div className="enterprise-card">
+          <div className="card-header">
+            <div className="card-title-block">
+              <PieChart size={16} color="#a855f7" />
+              <span className="card-title">Resolution Velocity Distribution</span>
             </div>
           </div>
-        </section>
 
-        <section className="chart-card">
-          <header className="chart-header">
-            <h2>Top Hotspots</h2>
-            <p className="muted">Areas with highest incident density</p>
-          </header>
-          <div className="hotspots-list">
-            {analytics.hotspots.map((item, idx) => (
-              <div key={item.area} className="hotspot-row">
-                <span className="hotspot-rank">#{idx + 1}</span>
-                <div className="hotspot-info">
-                  <span className="hotspot-name">{item.area}</span>
-                  <span className="hotspot-type">{item.type}</span>
+          <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {resolutionDistribution.map((item, idx) => (
+              <div key={idx}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', marginBottom: '6px' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{item.label}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{item.count} tickets ({item.pct}%)</span>
                 </div>
-                <span className="hotspot-count">{item.incidents}</span>
-                <span className={`hotspot-trend ${item.trend.startsWith('+') ? 'positive' : 'negative'}`}>{item.trend}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="chart-card">
-          <header className="chart-header">
-            <h2>SLA Breaches</h2>
-            <p className="muted">Incidents exceeding resolution timeframes</p>
-          </header>
-          <div className="sla-breaches">
-            {analytics.slaBreaches.map(item => (
-              <div key={item.incident} className="breach-row">
-                <div className="breach-info">
-                  <span className="breach-id">{item.incident}</span>
-                  <span className="breach-type">{item.type}</span>
-                </div>
-                <span className="breach-dept">{item.dept}</span>
-                <span className={`breach-overdue ${item.severity === 'CRITICAL' ? 'critical' : item.severity === 'HIGH' ? 'high' : ''}`}>
-                  {item.severity} • {item.overdue} overdue
-                </span>
-                <button className="btn btn-ghost btn-sm">Escalate</button>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="chart-card full-width">
-          <header className="chart-header">
-            <h2>Resolution Time Distribution</h2>
-            <p className="muted">Time to resolve by severity level</p>
-          </header>
-          <div className="resolution-distribution">
-            {[
-              { severity: 'CRITICAL', avg: '1.2 days', median: '0.8 days', p90: '2.5 days', color: '#ef4444' },
-              { severity: 'HIGH', avg: '2.1 days', median: '1.8 days', p90: '3.8 days', color: '#f97316' },
-              { severity: 'MEDIUM', avg: '4.5 days', median: '3.2 days', p90: '7.1 days', color: '#eab308' },
-              { severity: 'LOW', avg: '6.8 days', median: '5.5 days', p90: '10.2 days', color: '#3b82f6' },
-            ].map(item => (
-              <div key={item.severity} className="dist-row">
-                <span className="dist-severity" style={{ color: item.color }}>{item.severity}</span>
-                <div className="dist-bar" style={{ backgroundColor: item.color }} />
-                <div className="dist-stats">
-                  <span>Avg: {item.avg}</span>
-                  <span>Median: {item.median}</span>
-                  <span>P90: {item.p90}</span>
+                <div style={{ width: '100%', height: '8px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                  <div style={{ width: `${item.pct}%`, height: '100%', background: item.color, borderRadius: 'var(--radius-full)' }} />
                 </div>
               </div>
             ))}
+
+            <div style={{
+              marginTop: '12px',
+              padding: '12px',
+              background: 'rgba(16, 185, 129, 0.1)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '12px',
+              color: '#34d399',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <CheckCircle size={16} />
+              <span>82% of all critical infrastructure hazards are repaired within 6 hours.</span>
+            </div>
           </div>
-        </section>
+        </div>
       </div>
     </div>
   );

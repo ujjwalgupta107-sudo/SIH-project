@@ -761,26 +761,82 @@ flowchart TD
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Running Locally)
 
-Ensure you have Python 3.14 (main backend) and Node.js installed. 
+Follow these quick steps to run both the **FastAPI Backend (with YOLOv8 AI Model)** and **React Vite Frontend**.
 
-### Terminal 1: Backend
-```powershell
-cd C:\Users\Ujjwal\Desktop\CivicShield-AI\backend
-$env:DATABASE_URL="sqlite:///./test.db"
-.\.venv\Scripts\activate
-python -m uvicorn app.main:app --reload --port 8000
+### 📋 Prerequisites
+- **Python 3.10+** (Tested on Python 3.11 / 3.12)
+- **Node.js 18+** & `npm`
+
+---
+
+### Step 1: Configure Environment Variables
+
+Create a `.env` file in the root of `SIH-project` (or copy from `.env.example`):
+
+```env
+DATABASE_URL=sqlite:///./test.db
+JWT_SECRET=supersecretcivicshieldjwtkey1234567890
+CORS_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:3000
+DEVELOPMENT_AI_MODE=True
+
+VITE_API_URL=http://localhost:8000/api/v1
 ```
 
-### Terminal 2: Frontend
+---
+
+### Step 2: Launch Backend (Terminal 1)
+
 ```powershell
-cd C:\Users\Ujjwal\Desktop\CivicShield-AI\frontend
+# Navigate to backend
+cd backend
+
+# 1. Create and activate Python virtual environment
+python -m venv .venv
+
+# On Windows (PowerShell):
+.\.venv\Scripts\activate
+# On Linux / macOS:
+# source .venv/bin/activate
+
+# 2. Install backend dependencies (FastAPI, Ultralytics YOLO, PyTorch, etc.)
+pip install -r requirements.txt
+
+# 3. Start the FastAPI server
+python -m uvicorn app.main:app --reload --port 8000 --host 0.0.0.0
+```
+
+> **Backend Status:** Server will start at [http://localhost:8000](http://localhost:8000). On startup, SQLite automatically seeds the database, departments, and demo accounts.
+> Interactive Swagger API docs: [http://localhost:8000/docs](http://localhost:8000/docs).
+
+---
+
+### Step 3: Launch Frontend (Terminal 2)
+
+```powershell
+# Open a new terminal and navigate to frontend
+cd frontend
+
+# 1. Install frontend packages
 npm install
+
+# 2. Start the Vite development server
 npm run dev
 ```
 
-*(Note: The ML model is pre-trained. You DO NOT need to activate the `.venv-yolo` environment unless you are actively retraining the neural network).*
+> **Frontend Status:** Application runs at [http://localhost:5173](http://localhost:5173).
+
+---
+
+### 🔑 Demo Login Credentials
+
+Open [http://localhost:5173](http://localhost:5173) in your browser:
+
+| Portal | Email | Password | 1-Click Quick Action on Login Screen |
+|---|---|---|---|
+| **Citizen Portal** | `citizen@civicshield.ai` | `citizen123` | Click **"👤 Citizen Demo"** button |
+| **Municipal Command Center** | `authority@civicshield.ai` | `authority123` | Click **"🛡️ Authority HQ"** button |
 
 ---
 
@@ -788,12 +844,11 @@ npm run dev
 
 | Symptom | Cause | Solution |
 |---|---|---|
-| **Port 8000 in use** | Another instance is running | Kill process: `Get-Process -Id (Get-NetTCPConnection -LocalPort 8000).OwningProcess \| Stop-Process` |
-| **Blank Frontend** | Missing NPM packages | Run `npm install` in `/frontend`. |
-| **Login Error 401** | Database not seeded | Ensure `test.db` exists in the backend directory. |
-| **Camera/GPS Denied** | Browser security block | Click the lock icon in the URL bar and manually allow Camera & Location. |
-| **best.pt Missing** | Training not run | The API will safely mock inferences so you can continue UI testing. |
-| **CUDA Unavailable** | Wrong python env | Ensure you are in `.venv-yolo` running Python 3.11 for training. |
+| **Port 8000 in use** | Another backend instance is running | Kill process on port 8000:<br>`Get-Process -Id (Get-NetTCPConnection -LocalPort 8000).OwningProcess \| Stop-Process` |
+| **Port 5173 in use** | Vite opened on 5174 | Check terminal for active port or kill previous node processes. |
+| **Login Error 401** | Database not seeded | Restart the backend server. `main.py` automatically seeds demo users on startup in `test.db`. |
+| **Camera/GPS Permission Denied** | Browser security block | Click the lock/settings icon next to the URL bar and allow Camera & Location. |
+| **Paste Screenshot** | Quick reporting | Press `Ctrl+V` anywhere on the **Report Hazard** page or click **"Paste from Clipboard"**. |
 
 ---
 

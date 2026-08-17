@@ -1,249 +1,312 @@
-import { useState, useEffect } from 'react';
-import { FileText, MapPin, AlertCircle, CheckCircle, Clock, XCircle, Filter, ChevronDown, Download, Eye } from 'lucide-react';
-import { getDrafts, removeDraft, OfflineIncident } from '../../services/offlineQueue';
-import { useNavigate } from 'react-router-dom';
-
-type Status = 'DRAFT' | 'SUBMITTED' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED';
-
-const statusConfig: Record<Status, { icon: any; label: string; class: string }> = {
-  DRAFT: { icon: FileText, label: 'Draft', class: 'status-draft' },
-  SUBMITTED: { icon: Clock, label: 'Submitted', class: 'status-submitted' },
-  IN_PROGRESS: { icon: AlertCircle, label: 'In Progress', class: 'status-in-progress' },
-  RESOLVED: { icon: CheckCircle, label: 'Resolved', class: 'status-resolved' },
-  REJECTED: { icon: XCircle, label: 'Rejected', class: 'status-rejected' },
-};
-
-interface Incident {
-  id: string;
-  type: string;
-  severity: string;
-  location: string;
-  status: Status;
-  date: string;
-  authority: string;
-  department: string;
-  confidence: number;
-  isDraft?: boolean;
-}
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  ClipboardList,
+  Search,
+  Filter,
+  MapPin,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  Eye,
+  PlusCircle,
+  X,
+  ExternalLink,
+  ShieldAlert
+} from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { LeafletMap } from '../../components/common/LeafletMap';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 export function HistoryPage() {
-  const [drafts, setDrafts] = useState<OfflineIncident[]>([]);
-  const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | Status>('all');
-  const [sortBy, setSortBy] = useState<'date' | 'status' | 'severity'>('date');
+  const { token } = useAuth();
+  const [incidents, setIncidents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [selectedIncident, setSelectedIncident] = useState<any | null>(null);
 
   useEffect(() => {
-    loadDrafts();
-    loadIncidents();
-  }, []);
-
-  const loadDrafts = async () => {
-    const data = await getDrafts();
-    setDrafts(data);
-  };
-
-  const loadIncidents = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) { setLoading(false); return; }
-    try {
-      const res = await fetch(`${API_URL}/incidents/mine`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const mapped: Incident[] = data.map((inc: any) => ({
-          id: inc.id,
-          type: inc.type,
-          severity: inc.risk_level,
-          location: inc.address,
-          status: inc.status === 'REPORTED' ? 'SUBMITTED' : inc.status as Status,
-          date: inc.created_at?.split('T')[0] || '',
-          authority: inc.authority || inc.department || 'Assigned',
-          department: inc.department || 'Unassigned',
-          confidence: inc.confidence,
-        }));
-        setIncidents(mapped);
-      } else {
-        setApiError('Could not load incidents from server.');
+    async function fetchIncidents() {
+      try {
+        const res = await fetch(`${API_URL}/incidents/mine`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setIncidents(data);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      setApiError('Network error — showing offline drafts only.');
-    } finally {
-      setLoading(false);
     }
-  };
+    if (token) fetchIncidents();
+  }, [token]);
 
-  const handleRemoveDraft = async (id: string) => {
-    await removeDraft(id);
-    loadDrafts();
-  };
+  const filteredIncidents = incidents.filter((inc) => {
+    const matchesSearch =
+      (inc.type && inc.type.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (inc.address && inc.address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (inc.id && inc.id.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  const handleViewIncident = (id: string) => {
-    navigate(`/history/${id}`);
-  };
-
-  const draftIncidents: Incident[] = drafts.map(d => ({
-    id: d.id.slice(0, 12),
-    type: d.type.toLowerCase(),
-    severity: 'MEDIUM',
-    location: d.latitude && d.longitude ? `Lat: ${d.latitude.toFixed(4)}, Lng: ${d.longitude.toFixed(4)}` : 'Unknown',
-    status: 'DRAFT',
-    date: new Date(d.timestamp).toISOString().split('T')[0],
-    authority: 'Pending',
-    department: 'Pending',
-    confidence: 0,
-    isDraft: true,
-  }));
-
-  const filteredIncidents = [...incidents, ...draftIncidents].filter(item => {
-    if (filter === 'all') return true;
-    return item.status === filter;
-  }).sort((a, b) => {
-    if (sortBy === 'date') return new Date(b.date).getTime() - new Date(a.date).getTime();
-    if (sortBy === 'status') return a.status.localeCompare(b.status);
-    return 0;
+    const matchesStatus = statusFilter === 'ALL' || inc.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
 
-  const getStatusInfo = (status: Status) => statusConfig[status] || statusConfig.DRAFT;
-
   return (
-    <div className="page history-page">
-      <header className="page-header">
-        <div>
-          <h1>My Reports</h1>
-          <p className="muted">Track your submitted civic issues</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Header */}
+      <div className="page-header-row">
+        <div className="page-title-group">
+          <h1>
+            <ClipboardList size={24} color="#06b6d4" />
+            <span>My Submitted Incident Reports</span>
+          </h1>
+          <p>Track live municipal triage, department dispatch, and resolution verification for your reports.</p>
         </div>
-        <div className="header-actions">
-          <select
-            className="select"
-            value={filter}
-            onChange={e => setFilter(e.target.value as any)}
-            aria-label="Filter by status"
-          >
-            <option value="all">All Status</option>
-            <option value="DRAFT">Draft</option>
-            <option value="SUBMITTED">Submitted</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="RESOLVED">Resolved</option>
-            <option value="REJECTED">Rejected</option>
-          </select>
-          <select
-            className="select"
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as any)}
-            aria-label="Sort by"
-          >
-            <option value="date">Date (Newest)</option>
-            <option value="status">Status</option>
-            <option value="severity">Severity</option>
-          </select>
-        </div>
-      </header>
 
-      {loading ? (
-        <div className="loading-state">
-          <div className="spinner" />
-          <p>Loading reports...</p>
+        <div className="page-header-actions">
+          <Link to="/report" className="btn btn-cyan">
+            <PlusCircle size={16} />
+            <span>Report New Hazard</span>
+          </Link>
         </div>
-      ) : filteredIncidents.length === 0 ? (
-        <div className="empty-state">
-          <FileText size={48} className="empty-icon" />
-          <h3>No Reports Found</h3>
-          <p>{filter !== 'all' ? `No reports with status "${filter}"` : 'You haven\'t submitted any reports yet'}</p>
-          {filter !== 'all' && <button className="btn btn-outline" onClick={() => setFilter('all')}>Clear Filter</button>}
+      </div>
+
+      {/* Filter Toolbar */}
+      <div className="filter-toolbar">
+        <div className="filter-left-controls">
+          <div className="search-input-wrapper">
+            <Search size={16} className="search-icon-inside" />
+            <input
+              type="text"
+              className="search-input-field"
+              placeholder="Search by ID, issue or address..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {['ALL', 'REPORTED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED'].map((status) => (
+            <button
+              key={status}
+              type="button"
+              className={`filter-pill-btn ${statusFilter === status ? 'active' : ''}`}
+              onClick={() => setStatusFilter(status)}
+            >
+              {status.replace('_', ' ')}
+            </button>
+          ))}
         </div>
-      ) : (
-        <div className="incidents-table-container">
-          <table className="incidents-table" role="table">
-            <thead>
-              <tr>
-                <th>Incident ID</th>
-                <th>Issue Type</th>
-                <th>Severity</th>
-                <th>Location</th>
-                <th>Status</th>
-                <th>Date</th>
-                <th>Authority</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredIncidents.map((incident, idx) => {
-                const statusInfo = getStatusInfo(incident.status);
-                const StatusIcon = statusInfo.icon;
-                return (
-                  <tr key={`${incident.id}-${idx}`}>
-                    <td className="incident-id">
-                      <code>{incident.id}</code>
-                      {incident.isDraft && <span className="draft-badge">DRAFT</span>}
+
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+          Showing <strong>{filteredIncidents.length}</strong> of <strong>{incidents.length}</strong> reports
+        </div>
+      </div>
+
+      {/* Incidents Table / Cards */}
+      <div className="enterprise-card" style={{ padding: '0' }}>
+        {loading ? (
+          <div className="loading-state-container">
+            <div className="pulse-dot" style={{ width: '12px', height: '12px' }} />
+            <span>Loading submissions from database...</span>
+          </div>
+        ) : filteredIncidents.length === 0 ? (
+          <div className="empty-state-container">
+            <ClipboardList className="empty-state-icon" />
+            <div className="empty-state-title">No Incident Records Found</div>
+            <p className="empty-state-desc">
+              {searchTerm || statusFilter !== 'ALL'
+                ? 'Try adjusting your search query or status filter.'
+                : 'You have not submitted any civic reports yet. Report a pothole or flood to get started!'}
+            </p>
+          </div>
+        ) : (
+          <div className="table-responsive-wrapper" style={{ border: 'none', borderRadius: '0' }}>
+            <table className="enterprise-table">
+              <thead>
+                <tr>
+                  <th>Incident ID</th>
+                  <th>Category</th>
+                  <th>Geospatial Location</th>
+                  <th>Severity Score</th>
+                  <th>Target Department</th>
+                  <th>Resolution Status</th>
+                  <th>Filed Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredIncidents.map((inc) => (
+                  <tr key={inc.id}>
+                    <td className="table-id-cell">
+                      {inc.id.slice(0, 8)}...
                     </td>
                     <td>
-                      <span className="issue-type">{incident.type.replace('_', ' ')}</span>
-                      {incident.confidence > 0 && (
-                        <span className="confidence-tag">{(incident.confidence * 100).toFixed(0)}%</span>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, textTransform: 'capitalize' }}>
+                        <span>{inc.type?.toLowerCase().includes('water') ? '🌊' : '🕳️'}</span>
+                        <span>{inc.type}</span>
+                      </div>
+                    </td>
+                    <td style={{ maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}>
+                        <MapPin size={13} color="#06b6d4" style={{ minWidth: '13px' }} />
+                        <span title={inc.address}>{inc.address || `${inc.latitude?.toFixed(4)}, ${inc.longitude?.toFixed(4)}`}</span>
+                      </div>
                     </td>
                     <td>
-                      <span className={`severity-badge ${incident.severity.toLowerCase()}`}>{incident.severity}</span>
-                    </td>
-                    <td>
-                      <MapPin size={14} aria-hidden="true" />
-                      <span>{incident.location}</span>
-                    </td>
-                    <td>
-                      <span className={`status-badge ${statusInfo.class}`}>
-                        <StatusIcon size={14} aria-hidden="true" />
-                        {statusInfo.label}
+                      <span className={`badge ${inc.severity >= 80 ? 'badge-critical' : inc.severity >= 50 ? 'badge-high' : 'badge-low'}`}>
+                        {inc.severity}/100 {inc.severity >= 80 ? 'Critical' : inc.severity >= 50 ? 'High' : 'Moderate'}
                       </span>
                     </td>
-                    <td>{incident.date}</td>
                     <td>
-                      <div className="authority-info">
-                        <span className="authority">{incident.authority}</span>
-                        <span className="department">{incident.department}</span>
-                      </div>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                        {inc.department || 'Public Works (PWD)'}
+                      </span>
                     </td>
                     <td>
-                      <div className="action-buttons">
-                        {!incident.isDraft && (
-                          <button
-                            className="btn btn-ghost btn-sm"
-                            onClick={() => handleViewIncident(incident.id)}
-                            aria-label={`View ${incident.id}`}
-                          >
-                            <Eye size={16} />
-                          </button>
-                        )}
-                        {incident.isDraft && (
-                          <>
-                            <button
-                              className="btn btn-primary btn-sm"
-                              onClick={() => navigate('/report')}
-                              aria-label="Complete draft"
-                            >
-                              Complete
-                            </button>
-                            <button
-                              className="btn btn-danger btn-sm"
-                              onClick={() => handleRemoveDraft(incident.id)}
-                              aria-label="Delete draft"
-                            >
-                              <XCircle size={16} />
-                            </button>
-                          </>
-                        )}
-                      </div>
+                      <span className={`badge ${inc.status === 'RESOLVED' ? 'badge-status-resolved' : inc.status === 'IN_PROGRESS' ? 'badge-status-inprogress' : 'badge-status-reported'}`}>
+                        <div className="badge-dot" />
+                        <span>{inc.status || 'REPORTED'}</span>
+                      </span>
+                    </td>
+                    <td className="table-date-cell">
+                      {new Date(inc.created_at || Date.now()).toLocaleDateString()}
+                    </td>
+                    <td>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setSelectedIncident(inc)}
+                      >
+                        <Eye size={13} />
+                        <span>Inspect</span>
+                      </button>
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Detailed Slide-over Modal */}
+      {selectedIncident && (
+        <div className="modal-backdrop-overlay" onClick={() => setSelectedIncident(null)}>
+          <div className="modal-dialog-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span className="modal-title">Incident Audit Ref: {selectedIncident.id}</span>
+                <span className={`badge ${selectedIncident.status === 'RESOLVED' ? 'badge-status-resolved' : 'badge-status-reported'}`}>
+                  {selectedIncident.status}
+                </span>
+              </div>
+              <button className="modal-close-btn" onClick={() => setSelectedIncident(null)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {/* Category and Severity Banner */}
+              <div style={{
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-md)',
+                padding: '16px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '12px'
+              }}>
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Type</div>
+                  <div style={{ fontWeight: 700, fontSize: '14px', textTransform: 'capitalize', color: 'var(--text-main)', marginTop: '2px' }}>
+                    {selectedIncident.type}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Severity Rating</div>
+                  <div style={{ fontWeight: 700, fontSize: '14px', color: selectedIncident.severity >= 80 ? '#f87171' : '#38bdf8', marginTop: '2px' }}>
+                    {selectedIncident.severity}/100 ({selectedIncident.risk_level || 'ELEVATED'})
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Assigned Division</div>
+                  <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--accent-cyan)', marginTop: '2px' }}>
+                    {selectedIncident.department || 'Public Works (PWD)'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Citizen Hazard Description</div>
+                <div style={{ padding: '12px', background: 'var(--bg-input)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', fontSize: '13px' }}>
+                  {selectedIncident.description || 'No detailed description recorded.'}
+                </div>
+              </div>
+
+              {/* Mini Map Location */}
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  📍 {selectedIncident.address} ({selectedIncident.latitude?.toFixed(4)}, {selectedIncident.longitude?.toFixed(4)})
+                </div>
+                <div style={{ height: '180px', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                  <LeafletMap
+                    center={[selectedIncident.latitude || 28.6139, selectedIncident.longitude || 77.2090]}
+                    zoom={15}
+                    height="180px"
+                    markers={[
+                      {
+                        id: selectedIncident.id,
+                        latitude: selectedIncident.latitude || 28.6139,
+                        longitude: selectedIncident.longitude || 77.2090,
+                        type: selectedIncident.type,
+                        severity: selectedIncident.severity,
+                        address: selectedIncident.address,
+                      }
+                    ]}
+                  />
+                </div>
+              </div>
+
+              {/* Resolution Stepper */}
+              <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '14px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, marginBottom: '10px' }}>Resolution Lifecycle Progress</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', textAlign: 'center' }}>
+                  {[
+                    { step: '1. Logged', done: true },
+                    { step: '2. AI Assessed', done: true },
+                    { step: '3. Crew Dispatched', done: selectedIncident.status === 'IN_PROGRESS' || selectedIncident.status === 'RESOLVED' },
+                    { step: '4. Verified Fix', done: selectedIncident.status === 'RESOLVED' },
+                  ].map((s, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '8px 4px',
+                        borderRadius: 'var(--radius-sm)',
+                        background: s.done ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-surface)',
+                        border: `1px solid ${s.done ? 'rgba(16, 185, 129, 0.4)' : 'var(--border-subtle)'}`,
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: s.done ? '#34d399' : 'var(--text-muted)'
+                      }}
+                    >
+                      {s.step}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setSelectedIncident(null)}>
+                Close Audit View
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

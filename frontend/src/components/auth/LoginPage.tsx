@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Shield, Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Shield, Lock, Mail, Eye, EyeOff, AlertCircle, Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export function LoginPage() {
@@ -12,7 +12,6 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [shake, setShake] = useState(false);
 
   const from = (location.state as any)?.from?.pathname || '/';
 
@@ -20,106 +19,142 @@ export function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    setShake(false);
 
     try {
       await login({ email, password });
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
+      setError(err instanceof Error ? err.message : 'Invalid credentials. Please verify your email and password.');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDemoFill = (demoEmail: string, demoPass: string) => {
+    setEmail(demoEmail);
+    setPassword(demoPass);
+    setError('');
+  };
+
   return (
-    <div className="login-page">
-      <div className={`login-card ${shake ? 'shake' : ''}`}>
-        <div className="login-header">
-          <Shield className="login-logo" size={48} />
+    <div className="enterprise-login-screen">
+      <div className="login-glow-orb-1" />
+      <div className="login-glow-orb-2" />
+
+      <div className="enterprise-login-card">
+        <div className="login-header-banner">
+          <div className="login-brand-logo">
+            <Shield size={30} />
+          </div>
           <h1>CivicShield AI</h1>
-          <p className="login-subtitle">Smart Civic Infrastructure Monitoring</p>
+          <p>Next-Gen Municipal Intelligence & Citizen Incident Response</p>
+        </div>
+
+        {/* 1-Click Demo Accounts */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            ⚡ Instant Demo Login
+          </div>
+          <div className="demo-login-quick-switches">
+            <button
+              type="button"
+              className="demo-switch-btn"
+              onClick={() => handleDemoFill('citizen@civicshield.ai', 'citizen123')}
+            >
+              <span>👤 Citizen Demo</span>
+              <span>citizen@civicshield.ai</span>
+            </button>
+            <button
+              type="button"
+              className="demo-switch-btn"
+              onClick={() => handleDemoFill('authority@civicshield.ai', 'authority123')}
+            >
+              <span>🛡️ Authority HQ</span>
+              <span>authority@civicshield.ai</span>
+            </button>
+          </div>
         </div>
 
         {error && (
-          <div className="alert alert-error" role="alert">
-            <AlertCircle size={18} />
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 14px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--severity-critical-bg)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            color: '#f87171',
+            fontSize: '12.5px'
+          }}>
+            <AlertCircle size={16} />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="input-group">
-            <label htmlFor="email" className="input-label">Email</label>
-            <div className="input-wrapper">
-              <Mail className="input-icon" size={20} />
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="form-group">
+            <label className="form-label" htmlFor="email">Work / Citizen Email</label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <Mail size={16} style={{ position: 'absolute', left: '14px', color: 'var(--text-muted)' }} />
               <input
-                type="email"
                 id="email"
-                className="input"
+                type="email"
+                className="form-input"
+                style={{ paddingLeft: '38px' }}
+                placeholder="citizen@civicshield.ai"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="Enter your email"
                 required
                 disabled={loading}
-                autoComplete="email"
               />
             </div>
           </div>
 
-          <div className="input-group">
-            <label htmlFor="password" className="input-label">Password</label>
-            <div className="input-wrapper">
-              <Lock className="input-icon" size={20} />
+          <div className="form-group">
+            <label className="form-label" htmlFor="password">Security Password</label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <Lock size={16} style={{ position: 'absolute', left: '14px', color: 'var(--text-muted)' }} />
               <input
-                type={showPassword ? 'text' : 'password'}
                 id="password"
-                className="input"
+                type={showPassword ? 'text' : 'password'}
+                className="form-input"
+                style={{ paddingLeft: '38px', paddingRight: '38px' }}
+                placeholder="••••••••••••"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="Enter your password"
                 required
                 disabled={loading}
-                autoComplete="current-password"
               />
               <button
                 type="button"
-                className="icon-button"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                disabled={loading}
+                style={{ position: 'absolute', right: '12px', background: 'transparent', color: 'var(--text-muted)' }}
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
           <button
             type="submit"
-            className="btn btn-primary btn-full btn-lg"
+            className="btn btn-cyan btn-lg"
+            style={{ width: '100%', marginTop: '8px' }}
             disabled={loading}
           >
             {loading ? (
-              <>
-                <span className="btn-text">Signing in...</span>
-              </>
+              <span>Authenticating...</span>
             ) : (
               <>
-                <span className="btn-text">Sign In</span>
+                <span>Access Command Dashboard</span>
+                <ArrowRight size={16} />
               </>
             )}
           </button>
         </form>
 
-        <div className="login-footer">
-          <p className="muted">Demo credentials:</p>
-          <div className="demo-credentials">
-            <code>citizen@civicshield.ai</code> / <code>citizen123</code>
-            <br />
-            <code>authority@civicshield.ai</code> / <code>authority123</code>
-          </div>
+        <div style={{ textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
+          Protected by CivicShield Zero-Trust Neural Architecture • 256-bit JWT Encryption
         </div>
       </div>
     </div>
